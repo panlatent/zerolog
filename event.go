@@ -54,6 +54,15 @@ type LogArrayMarshaler interface {
 	MarshalZerologArray(a *Array)
 }
 
+func NewEvent() *Event {
+	e := eventPool.Get().(*Event)
+	e.buf = e.buf[:0]
+	e.ch = nil
+	e.buf = enc.AppendBeginMarker(e.buf)
+	e.stack = false
+	return e
+}
+
 func newEvent(w LevelWriter, level Level) *Event {
 	e := eventPool.Get().(*Event)
 	e.buf = e.buf[:0]
@@ -93,6 +102,14 @@ func (e *Event) Discard() *Event {
 	}
 	e.level = Disabled
 	return nil
+}
+
+func (e *Event) MsgTo(msg string, w LevelWriter) {
+	if e == nil {
+		return
+	}
+	e.w = w
+	e.msg(msg)
 }
 
 // Msg sends the *Event with msg added as the message field if not empty.
